@@ -2,6 +2,8 @@ name: test_github_actions
 on: [push]
 jobs:
   build:
+    env:
+      BLENDER_VERSION: 4.2.0
     strategy:
       matrix:
         include:
@@ -17,19 +19,175 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: setup python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.11
+      - name: cache blender
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/blender
+          key: blender-${{ runner.os }}-${{ env.BLENDER_VERSION }}
+          restore-keys: |
+            blender-${{ runner.os }}-
       - name: build
         run: ./build_mtree.${{ matrix.extension }}
+      - name: download blender (windows)
+        if: matrix.os == 'windows-latest'
+        id: blender-win
+        shell: pwsh
+        run: |
+          $version = '${{ env.BLENDER_VERSION }}'
+          $dest = Join-Path $env:RUNNER_TEMP "blender"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          $blenderExe = Get-ChildItem -Path $dest -Recurse -Filter blender.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $blenderExe) {
+            $zip = Join-Path $dest "blender.zip"
+          $url = "https://download.blender.org/release/Blender4.2/blender-$version-windows-x64.zip"
+            Invoke-WebRequest -Uri $url -OutFile $zip
+            Expand-Archive -Path $zip -DestinationPath $dest -Force
+            $blenderExe = Get-ChildItem -Path $dest -Recurse -Filter blender.exe | Select-Object -First 1
+          }
+          if (-not $blenderExe) { throw "blender.exe not found in $dest" }
+          "path=$($blenderExe.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+      - name: download blender (linux)
+        if: matrix.os == 'ubuntu-latest'
+        id: blender-linux
+        shell: bash
+        run: |
+          version="${{ env.BLENDER_VERSION }}"
+          dest="$RUNNER_TEMP/blender"
+          mkdir -p "$dest"
+          blender_bin=$(find "$dest" -type f -name blender -perm -u+x | head -n 1)
+          if [ -z "$blender_bin" ]; then
+          url="https://download.blender.org/release/Blender4.2/blender-$version-linux-x64.tar.xz"
+            curl -L "$url" -o "$dest/blender.tar.xz"
+            tar -xf "$dest/blender.tar.xz" -C "$dest"
+            blender_bin=$(find "$dest" -type f -name blender -perm -u+x | head -n 1)
+          fi
+          if [ -z "$blender_bin" ]; then
+            echo "blender binary not found in $dest"
+            exit 1
+          fi
+          echo "path=$blender_bin" >> "$GITHUB_OUTPUT"
+      - name: download blender (macos)
+        if: matrix.os == 'macos-latest'
+        id: blender-mac
+        shell: bash
+        run: |
+          version="${{ env.BLENDER_VERSION }}"
+          dest="$RUNNER_TEMP/blender"
+          mkdir -p "$dest"
+          if [ ! -x "$dest/Blender.app/Contents/MacOS/Blender" ]; then
+            dmg="$dest/blender.dmg"
+            url="https://download.blender.org/release/Blender4.2/blender-$version-macOS.dmg"
+            curl -L "$url" -o "$dmg"
+            hdiutil attach "$dmg" -mountpoint "$dest/mount" -nobrowse
+            cp -R "$dest/mount/Blender.app" "$dest/Blender.app"
+            hdiutil detach "$dest/mount"
+          fi
+          xattr -dr com.apple.quarantine "$dest/Blender.app" || true
+          echo "path=$dest/Blender.app/Contents/MacOS/Blender" >> "$GITHUB_OUTPUT"
+      - name: smoke addon import/register (windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          BLENDER_BIN: ${{ steps.blender-win.outputs.path }}
+        run: |
+          & "$env:BLENDER_BIN" -b --factory-startup --python scripts\smoke_blender_addon.py -- --addon-dir .
+      - name: smoke addon import/register (linux)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        env:
+          BLENDER_BIN: ${{ steps.blender-linux.outputs.path }}
+        run: |
+          "$BLENDER_BIN" -b --factory-startup --python scripts/smoke_blender_addon.py -- --addon-dir .
+      - name: smoke addon import/register (macos)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        env:
+          BLENDER_BIN: ${{ steps.blender-mac.outputs.path }}
+        run: |
+          "$BLENDER_BIN" -b --factory-startup --python scripts/smoke_blender_addon.py -- --addon-dir .
+      - name: smoke e2e tree build (windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          BLENDER_BIN: ${{ steps.blender-win.outputs.path }}
+        run: |
+          & "$env:BLENDER_BIN" -b --factory-startup --python scripts\smoke_e2e_tree_build.py -- --addon-dir .
+      - name: smoke e2e tree build (linux)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        env:
+          BLENDER_BIN: ${{ steps.blender-linux.outputs.path }}
+        run: |
+          "$BLENDER_BIN" -b --factory-startup --python scripts/smoke_e2e_tree_build.py -- --addon-dir .
+      - name: smoke e2e tree build (macos)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        env:
+          BLENDER_BIN: ${{ steps.blender-mac.outputs.path }}
+        run: |
+          "$BLENDER_BIN" -b --factory-startup --python scripts/smoke_e2e_tree_build.py -- --addon-dir .
       - name: package addon
         run: python .github/scripts/setup_addon.py
+      - name: smoke install addon from zip (windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          BLENDER_BIN: ${{ steps.blender-win.outputs.path }}
+        run: |
+          $base = Join-Path $env:RUNNER_TEMP "blender_user"
+          $cfg = Join-Path $base "config"
+          $scripts = Join-Path $base "scripts"
+          $data = Join-Path $base "datafiles"
+          New-Item -ItemType Directory -Force -Path $cfg,$scripts,$data | Out-Null
+          $env:BLENDER_USER_CONFIG = $cfg
+          $env:BLENDER_USER_SCRIPTS = $scripts
+          $env:BLENDER_USER_DATAFILES = $data
+          $zip = Get-ChildItem -Path tmp -Filter *.zip | Select-Object -First 1
+          if (-not $zip) { throw "zip not found in tmp/" }
+          & "$env:BLENDER_BIN" -b --factory-startup --python scripts\smoke_install_addon.py -- --zip-path $zip.FullName --module-name modular_tree
+      - name: smoke install addon from zip (linux)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        env:
+          BLENDER_BIN: ${{ steps.blender-linux.outputs.path }}
+        run: |
+          base="$RUNNER_TEMP/blender_user"
+          mkdir -p "$base/config" "$base/scripts" "$base/datafiles"
+          export BLENDER_USER_CONFIG="$base/config"
+          export BLENDER_USER_SCRIPTS="$base/scripts"
+          export BLENDER_USER_DATAFILES="$base/datafiles"
+          zip_path=$(ls tmp/*.zip | head -n 1)
+          if [ -z "$zip_path" ]; then
+            echo "zip not found in tmp/"
+            exit 1
+          fi
+          "$BLENDER_BIN" -b --factory-startup --python scripts/smoke_install_addon.py -- --zip-path "$zip_path" --module-name modular_tree
+      - name: smoke install addon from zip (macos)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        env:
+          BLENDER_BIN: ${{ steps.blender-mac.outputs.path }}
+        run: |
+          base="$RUNNER_TEMP/blender_user"
+          mkdir -p "$base/config" "$base/scripts" "$base/datafiles"
+          export BLENDER_USER_CONFIG="$base/config"
+          export BLENDER_USER_SCRIPTS="$base/scripts"
+          export BLENDER_USER_DATAFILES="$base/datafiles"
+          zip_path=$(ls tmp/*.zip | head -n 1)
+          if [ -z "$zip_path" ]; then
+            echo "zip not found in tmp/"
+            exit 1
+          fi
+          "$BLENDER_BIN" -b --factory-startup --python scripts/smoke_install_addon.py -- --zip-path "$zip_path" --module-name modular_tree
       - name: upload zipped addon
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: modular_tree_${{ matrix.name }}
           path: tmp/*.zip
@@ -41,19 +199,19 @@ jobs:
       STATUS: ${{ !endsWith(github.ref, 'master') && 'alpha' || '' }}
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Download build artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
       - name: Display structure of downloaded files
         run: ls -R
       - name: Get version
         id: vars
-        run: echo ::set-output name=version::$(cat VERSION)
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
       - name: Update release
         uses: johnwbyrd/update-release@v1.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: ./modular_tree_windows/modular_tree_${{ steps.vars.outputs.version }}_windows.zip ./modular_tree_linux/modular_tree_${{ steps.vars.outputs.version }}_linux.zip ./modular_tree_macOS/modular_tree_${{ steps.vars.outputs.version }}_macOS.zip 
+          files: ./modular_tree_windows/*.zip ./modular_tree_linux/*.zip ./modular_tree_macOS/*.zip
           release: Release V${{ steps.vars.outputs.version }}${{ env.STATUS }}
           tag: ${{ steps.vars.outputs.version }}${{ env.STATUS }}
           message: V${{ steps.vars.outputs.version }}

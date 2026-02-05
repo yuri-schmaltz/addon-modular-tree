@@ -1,4 +1,3 @@
-import time
 import numpy as np
 import bpy
 from .... import m_tree
@@ -103,12 +102,12 @@ class TreeMesherNode(bpy.types.Node, MtreeNode):
         mesh.loops.add(len(faces))
         mesh.loops.foreach_set("vertex_index", faces)
         
-        loop_start = np.arange(0, len(faces), 4, dtype=np.int)
-        loop_total = np.ones(len(faces)//4, dtype = np.int)*4
+        loop_start = np.arange(0, len(faces), 4, dtype=np.int32)
+        loop_total = np.ones(len(faces)//4, dtype=np.int32) * 4
         mesh.polygons.add(len(faces)//4)
         mesh.polygons.foreach_set("loop_start", loop_start)
         mesh.polygons.foreach_set("loop_total", loop_total)
-        mesh.polygons.foreach_set('use_smooth',  np.ones(len(faces)//4, dtype=np.bool))
+        mesh.polygons.foreach_set('use_smooth', np.ones(len(faces)//4, dtype=bool))
         
         
         uv_data = cpp_mesh.get_uvs()
@@ -125,17 +124,26 @@ class TreeMesherNode(bpy.types.Node, MtreeNode):
         loops_detected = self.detect_loop_rec(self)
         return has_valid_child and not loops_detected
 
-    def detect_loop_rec(self, node = None, seen_nodes = None):
-        if node is None: 
+    def detect_loop_rec(self, node=None, visiting=None, visited=None):
+        if node is None:
             node = self
-        if seen_nodes is None:
-            seen_nodes = set()
+        if visiting is None:
+            visiting = set()
+        if visited is None:
+            visited = set()
+
+        node_name = node.name
+        if node_name in visiting:
+            return True
+        if node_name in visited:
+            return False
+
+        visiting.add(node_name)
         for output in node.outputs:
             for link in output.links:
-                destination_node = link.to_node
-                if destination_node in seen_nodes:
+                if self.detect_loop_rec(link.to_node, visiting, visited):
                     return True
-                seen_nodes.add(destination_node)
-                self.detect_loop_rec(destination_node, seen_nodes)
+        visiting.remove(node_name)
+        visited.add(node_name)
         return False
 

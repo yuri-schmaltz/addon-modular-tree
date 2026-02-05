@@ -17,7 +17,7 @@ def register():
 
 def unregister():
     node_categories.unregister()
-    base_types.unregister()
-    sockets.unregister()
     properties.unregister()
     tree_function_nodes.unregister()
+    sockets.unregister()
+    base_types.unregister()

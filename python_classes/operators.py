@@ -1,12 +1,6 @@
 from bpy.utils import register_class, unregister_class
-from gpu_extras.batch import batch_for_shader
-import time
 import bpy
-import bmesh
-import gpu
-import numpy as np
 
-from .. import m_tree
 from .resources.node_groups import distribute_leaves
 
 
@@ -20,8 +14,26 @@ class ExecuteNodeFunction(bpy.types.Operator):
     function_name : bpy.props.StringProperty()
 
     def execute(self, context):
-        node = bpy.data.node_groups[self.node_tree_name].nodes[self.node_name]
-        getattr(node, self.function_name)()
+        node_group = bpy.data.node_groups.get(self.node_tree_name)
+        if node_group is None:
+            self.report({'ERROR'}, f"Node group '{self.node_tree_name}' not found.")
+            return {'CANCELLED'}
+
+        node = node_group.nodes.get(self.node_name)
+        if node is None:
+            self.report({'ERROR'}, f"Node '{self.node_name}' not found.")
+            return {'CANCELLED'}
+
+        function = getattr(node, self.function_name, None)
+        if function is None:
+            self.report({'ERROR'}, f"Action '{self.function_name}' is unavailable.")
+            return {'CANCELLED'}
+
+        try:
+            function()
+        except Exception as exc:
+            self.report({'ERROR'}, f"Failed to execute action: {exc}")
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -34,8 +46,15 @@ class AddLeavesModifier(bpy.types.Operator):
 
     def execute(self, context):
         ob = bpy.data.objects.get(self.object_id)
-        if ob is not None:
+        if ob is None:
+            self.report({'ERROR'}, f"Object '{self.object_id}' not found.")
+            return {'CANCELLED'}
+
+        try:
             distribute_leaves(ob)
+        except Exception as exc:
+            self.report({'ERROR'}, f"Failed to add leaves: {exc}")
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 

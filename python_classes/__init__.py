@@ -7,5 +7,5 @@ def register():
 
 
 def unregister():
-    operators.unregister()
     nodes.unregister()
+    operators.unregister()

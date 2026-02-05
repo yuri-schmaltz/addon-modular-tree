@@ -11,7 +11,10 @@ class MtreeIntSocket(bpy.types.NodeSocket, MtreeSocket):
     min_value : bpy.props.IntProperty(default = -10**9)
     max_value : bpy.props.IntProperty(default = 10**9)
     def update_value(self, context):
-        self["property_value"] = max(self.min_value, min(self.max_value, self.property_value))
+        clamped_value = max(self.min_value, min(self.max_value, self.property_value))
+        if clamped_value != self.property_value:
+            self.property_value = clamped_value
+            return
         mesher = self.node.get_mesher()
         if mesher is not None:
             mesher.build_tree()

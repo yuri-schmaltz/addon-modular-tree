@@ -1,5 +1,5 @@
 python3 m_tree/install.py
-cp ./m_tree/binaries/m_tree.cpython-39-x86_64-linux-gnu.so ./m_tree.cpython-39-x86_64-linux-gnu.so
+python3 .github/scripts/copy_native_module.py --source-dir m_tree/binaries --dest-dir .
 
 
 
