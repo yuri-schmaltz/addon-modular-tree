@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "modular_tree"
-version = "4.1.0"
+version = "5.6.0"
 name = "Modular Tree"
 tagline = "The ultimate procedural tree generation tool for Blender"
 maintainer = "Maxime"
