@@ -1,3 +1,5 @@
+import bpy
+import platform
 import sys
 from .resources.node_groups import distribute_leaves
 from .logger import get_logger, get_log_file
