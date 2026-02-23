@@ -1,0 +1,13 @@
+/home/yurix/Documentos/addon-modular-tree/core/m_tree/build/CMakeFiles/edit_cache.dir
+/home/yurix/Documentos/addon-modular-tree/core/m_tree/build/CMakeFiles/rebuild_cache.dir
+/home/yurix/Documentos/addon-modular-tree/core/m_tree/build/source/CMakeFiles/m_tree-lib.dir
+/home/yurix/Documentos/addon-modular-tree/core/m_tree/build/source/CMakeFiles/edit_cache.dir
+/home/yurix/Documentos/addon-modular-tree/core/m_tree/build/source/CMakeFiles/rebuild_cache.dir
+/home/yurix/Documentos/addon-modular-tree/core/m_tree/build/python_bindings/CMakeFiles/m_tree.dir
+/home/yurix/Documentos/addon-modular-tree/core/m_tree/build/python_bindings/CMakeFiles/edit_cache.dir
+/home/yurix/Documentos/addon-modular-tree/core/m_tree/build/python_bindings/CMakeFiles/rebuild_cache.dir
+/home/yurix/Documentos/addon-modular-tree/core/m_tree/build/python_bindings/[EXCLUDE_FROM_ALL]/CMakeFiles/edit_cache.dir
+/home/yurix/Documentos/addon-modular-tree/core/m_tree/build/python_bindings/[EXCLUDE_FROM_ALL]/CMakeFiles/rebuild_cache.dir
+/home/yurix/Documentos/addon-modular-tree/core/m_tree/build/tests/CMakeFiles/m_tree_tests.dir
+/home/yurix/Documentos/addon-modular-tree/core/m_tree/build/tests/CMakeFiles/edit_cache.dir
+/home/yurix/Documentos/addon-modular-tree/core/m_tree/build/tests/CMakeFiles/rebuild_cache.dir
