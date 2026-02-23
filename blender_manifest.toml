@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "modular_tree"
-version = "4.0.2"
+version = "4.1.0"
 name = "Modular Tree"
 tagline = "The ultimate procedural tree generation tool for Blender"
 maintainer = "Maxime"
@@ -12,4 +12,4 @@ tags = ["Modeling", "Procedural", "Nature", "Tree"]
 [permissions]
 files = "Read/Write tree data"
 [build]
-exclude = [".git*", "core/m_tree/build", "core/m_tree/binaries", "*.venv"]
+exclude = [".git*", "core/m_tree/build", "*.venv"]

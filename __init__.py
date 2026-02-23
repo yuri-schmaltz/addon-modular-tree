@@ -31,7 +31,7 @@ bl_info = {
     "author" : "Maxime",
     "description" : "A powerful node-based procedural tree generation tool.",
     "blender" : (4, 2, 0),
-    "version" : (4, 0, 2),
+    "version" : (4, 1, 0),
     "location" : "View3D > Sidebar > Mtree | Node Editor > Sidebar > Mtree",
     "warning" : "Requires Blender 4.2+ and compiled native module.",
     "doc_url": "https://github.com/MaximeHerpin/modular_tree",
