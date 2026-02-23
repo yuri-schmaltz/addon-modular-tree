@@ -2,9 +2,14 @@ schema_version = "1.0.0"
 id = "modular_tree"
 version = "4.0.2"
 name = "Modular Tree"
-tagline = "Procedural tree generation using nodes"
+tagline = "The ultimate procedural tree generation tool for Blender"
 maintainer = "Maxime"
 type = "add-on"
 website = "https://github.com/MaximeHerpin/modular_tree"
 blender_version_min = "4.2.0"
 license = ["SPDX:GPL-3.0-or-later", "SPDX:MIT"]
+tags = ["Modeling", "Procedural", "Nature", "Tree"]
+[permissions]
+files = "Read/Write tree data"
+[build]
+exclude = [".git*", "core/m_tree/build", "core/m_tree/binaries", "*.venv"]

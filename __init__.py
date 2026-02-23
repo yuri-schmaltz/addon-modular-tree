@@ -16,19 +16,26 @@ import os
 import sys
 from pathlib import Path
 import bpy
+from .core.logger import setup_logger, get_logger
+
+# Initialize logger
+setup_logger()
+logger = get_logger()
 
 MIN_BLENDER_VERSION = (4, 2, 0)
-_python_classes_module = None
+_core_module = None
 _dll_search_handles = []
 
 bl_info = {
     "name" : "Modular Tree",
     "author" : "Maxime",
-    "description" : "create trees",
+    "description" : "A powerful node-based procedural tree generation tool.",
     "blender" : (4, 2, 0),
     "version" : (4, 0, 2),
-    "location" : "",
-    "warning" : "Requires Blender 4.2+",
+    "location" : "View3D > Sidebar > Mtree | Node Editor > Sidebar > Mtree",
+    "warning" : "Requires Blender 4.2+ and compiled native module.",
+    "doc_url": "https://github.com/MaximeHerpin/modular_tree",
+    "tracker_url": "https://github.com/MaximeHerpin/modular_tree/issues",
     "category" : "Generic"
 }
 
@@ -45,15 +52,21 @@ def _find_native_module():
     )
 
     candidates = []
-    for pattern in ("m_tree*.pyd", "m_tree*.so", "m_tree*.dylib"):
-        candidates.extend(sorted(addon_root.glob(pattern)))
+    # Search in root and in core/m_tree/binaries (common for dev)
+    for search_path in (addon_root, addon_root / "core", addon_root / "core" / "m_tree" / "binaries"):
+        if not search_path.exists():
+            continue
+        for pattern in ("m_tree*.pyd", "m_tree*.so", "m_tree*.dylib"):
+            candidates.extend(sorted(search_path.glob(pattern)))
 
     for candidate in candidates:
         lowered = candidate.name.lower()
         if any(marker in lowered for marker in abi_markers):
+            logger.info(f"Found matching native module candidate: {candidate.name}")
             return candidate
 
     if candidates:
+        logger.warning(f"No exact Python ABI match found. Falling back to: {candidates[0].name}")
         return candidates[0]
     return None
 
@@ -63,6 +76,7 @@ def _ensure_native_module_loaded():
     if module_name in sys.modules:
         return
 
+    logger.debug(f"Attempting to load native module: {module_name}")
     native_module = _find_native_module()
     if native_module is None:
         py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
@@ -82,7 +96,9 @@ def _ensure_native_module_loaded():
     sys.modules[module_name] = module
     try:
         spec.loader.exec_module(module)
+        logger.info(f"Successfully loaded native module: {native_module.name}")
     except Exception as exc:
+        logger.error(f"Failed to load native module '{native_module.name}': {exc}")
         raise RuntimeError(
             f"Failed to load native module '{native_module.name}'. "
             "Check Blender/Python compatibility for this binary."
@@ -95,21 +111,21 @@ def _ensure_supported_blender():
         raise RuntimeError(f"Modular Tree requires Blender {required}+ (found {current}).")
 
 def register():
-    global _python_classes_module
+    global _core_module
     _ensure_supported_blender()
     _ensure_native_module_loaded()
-    if _python_classes_module is None:
-        from . import python_classes as imported_python_classes
+    if _core_module is None:
+        from . import core as imported_core
 
-        _python_classes_module = imported_python_classes
-    _python_classes_module.register()
+        _core_module = imported_core
+    _core_module.register()
     # auto_load.register()
 
 def unregister():
-    global _python_classes_module, _dll_search_handles
-    if _python_classes_module is not None:
-        _python_classes_module.unregister()
-        _python_classes_module = None
+    global _core_module, _dll_search_handles
+    if _core_module is not None:
+        _core_module.unregister()
+        _core_module = None
     for dll_handle in _dll_search_handles:
         dll_handle.close()
     _dll_search_handles = []

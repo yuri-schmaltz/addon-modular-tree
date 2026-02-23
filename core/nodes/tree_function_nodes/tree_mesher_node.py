@@ -9,6 +9,7 @@ def on_update_prop(node, context):
 class TreeMesherNode(bpy.types.Node, MtreeNode):
     bl_idname = "mt_MesherNode"
     bl_label = "Tree Mesher"
+    bl_description = "Converts the procedural tree data into a Blender Mesh object"
 
     radial_resolution : bpy.props.IntProperty(name="Radial Resolution", default=32, min=3, update=on_update_prop)
     smoothness : bpy.props.IntProperty(name="smoothness", default=4, min=0, update=on_update_prop)

@@ -6,6 +6,7 @@ from ....m_tree import BranchFunction
 class BranchNode(bpy.types.Node, MtreeFunctionNode):
     bl_idname = "mt_BranchNode"
     bl_label = "Branches"
+    bl_description = "Procedural branches generated based on density, length, and parent attributes"
 
     tree_function = BranchFunction
 

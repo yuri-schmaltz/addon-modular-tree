@@ -39,6 +39,12 @@ See the [blender extensions doc][blender extensions doc] for details.
 - **"Failed to load native module" / "DLL load failed" (Windows)**: confirme o ABI do Python e a presenca dos runtimes (MSVC ou MinGW conforme o compilador).
 - **Blender < 4.2**: atualize para 4.2+ (o add-on exige essa versao minima).
 
+#### Diagnostic Tool
+Se encontrar problemas, use a nossa ferramenta de diagnóstico integrada:
+1. No **Node Editor**, abra a **Sidebar (N)**.
+2. Selecione a aba **Mtree**.
+3. Clique em **Run Diagnostics**. O relatório será copiado para o clipboard e impresso no console do Blender.
+
 ### Uninstall
 1. `Edit > Preferences > Extensions`, desative o **Modular Tree**.
 2. Clique em **Remove** (se instalado por zip).
@@ -52,7 +58,10 @@ See the [blender extensions doc][blender extensions doc] for details.
 
 ### Installation
 1. Clone the repository reccursively `git clone --recursive https://github.com/MaximeHerpin/modular_tree`
-2. Execute the `build_mtree` script corresponding to your platform, using the Python version that matches Blender (or set `MTREE_PYTHON_VERSION`).
+2. Execute the install script using the Python version that matches Blender:
+   ```bash
+   python core/m_tree/install.py
+   ```
 3. If all went well, a cmake project has been generated under `mtree/build`.
 4. You can bundle the blender addon by calling the [addon bundling script].
 
@@ -111,7 +120,7 @@ trunk->add_child(branches_dead);
 Tree tree(trunk);
 ```
 ## License
-Blender being under the GPL license, the blender addon (all files under `python_classes` as well as `__init__.py`) is under the [GPLv3] license.\
+Blender being under the GPL license, the blender addon (all files under `core` as well as `__init__.py`) is under the [GPLv3] license.\
 The Mtree library is under the [MIT] license.
 
 

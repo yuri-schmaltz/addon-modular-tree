@@ -6,6 +6,7 @@ from ....m_tree import TrunkFunction
 class TrunkNode(bpy.types.Node, MtreeFunctionNode):
     bl_idname = "mt_TrunkNode"
     bl_label = "Trunk"
+    bl_description = "The base structure of the tree. Defines length, radius, and fundamental shape"
 
 
     tree_function = TrunkFunction
